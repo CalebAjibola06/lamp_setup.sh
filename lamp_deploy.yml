@@ -1,0 +1,33 @@
+- name: Deploy LAMP stack on Slave node
+  hosts: slave
+  become: true
+  tasks:
+    - name: Copy LAMP setup script
+      copy:
+        src: /home/vagrant/ansible/lamp_setup.sh
+        dest: /tmp/lamp_setup.sh
+        mode: 0755
+        #remote_src: yes  # Explicitly tell Ansible to copy from the controller
+
+    - name: Run LAMP setup script
+      shell: /tmp/lamp_setup.sh
+
+    - name: Check if application is accessible
+      uri:
+        url: "http://{{ ansible_vm_address }}"
+        status_code: 200
+      register: app_status
+
+    - name: Print application accessibility result
+      debug:
+        msg: "Laravel application is accessible: {{ app_status.status }}"
+      when: app_status.status == 200
+
+    - name: Create cron job for uptime check
+      cron:
+        name: Uptime check
+        job: "uptime >> /var/log/uptime.log"
+        minute: 0
+        hour: 0
+
+
